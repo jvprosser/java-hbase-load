@@ -33,7 +33,6 @@ import org.apache.hadoop.hbase.regionserver.BloomType;
 
 import java.io.IOException;
 
-
 public class CreateTable  extends Configured implements Tool {
 
     public int run(String[] args) throws IOException {
@@ -48,14 +47,14 @@ public class CreateTable  extends Configured implements Tool {
 	String regionCount = args[2];
 	String saltsPerRegion = args[3];
 		
-	long regionMaxSize = 107374182400l;
+#	long regionMaxSize = 107374182400l;
+	long regionMaxSize = 15032385536l;
 		
 	if (args.length > 4) {
 	    regionMaxSize = Long.parseLong(args[4]);
 	}
 
 	setConf(HBaseConfiguration.create(getConf()));
-
 
 	/** Connection to the cluster. A single connection shared by all application threads. */
 	Connection connection = null;

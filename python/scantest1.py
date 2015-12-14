@@ -7,9 +7,9 @@ namespace = "S92"
 poolsize=3
 prefix="04"
 #rfilter="{'regexstring:*|175|0'}"
-#rfilter="SingleColumnValueFilter ('blah','blouh',=,'regexstring:^batman$')"
+
 # RegexStringComparator
-rfilter="(RowFilter (=, 'regexstring:tail_num_009'))"
+rfilter="(RowFilter (=, 'regexstring:312'))"
 #rfilter="(RowFilter (=, 'binary:04')"
 tab="event"
 
@@ -26,10 +26,10 @@ print "table" + ": " + tab
 rowCount=0
 colCount=0
 
-#row_start="04", row_stop="05", tail_num_009004
+# tail_num_009004
 
 
-for key, data in table.scan(filter=rfilter):
+for key, data in table.scan(row_start="06", row_stop="08",filter=rfilter):
   rowCount += 1
   print "key is " + key
   print "LD data is " + data['f:LD']

@@ -51,34 +51,40 @@ import org.joda.time.format.DateTimeFormatter;
 
 public class EventBulkLoad extends Configured implements Tool {
 
-    public static byte[]  CQ_SN        = Bytes.toBytes("S");
-    public static byte[]  CQ_OPTIME    = Bytes.toBytes("O");
-    public static byte[]  CQ_ID        = Bytes.toBytes("I");
-    public static byte[]  CQ_RDFNAME   = Bytes.toBytes("F");
-    public static byte[]  CQ_PARAMID   = Bytes.toBytes("R");
-    public static byte[]  CQ_PARAMTYPE = Bytes.toBytes("Y");
-    public static byte[]  CQ_VALID     = Bytes.toBytes("D");
-    public static byte[]  CQ_TS        = Bytes.toBytes("T");
-    public static byte[]  CQ_VAL       = Bytes.toBytes("V");
-    //    public static byte[]  CQ_RDFCOUNT  = Bytes.toBytes("X");
+    public static byte[]  CQ_RDFNAME    = Bytes.toBytes("F");
+    public static byte[]  CQ_SN         = Bytes.toBytes("SN");
+    public static byte[]  CQ_OPTIME     = Bytes.toBytes("OT");
+    public static byte[]  CQ_EID        = Bytes.toBytes("EI");
+    public static byte[]  CQ_EVENTNAME  = Bytes.toBytes("EN");
+    public static byte[]  CQ_TS         = Bytes.toBytes("T");
+    public static byte[]  CQ_DUR        = Bytes.toBytes("D");
+    public static byte[]  CQ_EXCEEDANCE = Bytes.toBytes("X");
+    public static byte[]  CQ_PILOTINIT  = Bytes.toBytes("PI");
+    public static byte[]  CQ_HASLDS     = Bytes.toBytes("HL");
+    public static byte[]  CQ_EVENTTYPE  = Bytes.toBytes("ET");
+    public static byte[]  CQ_EVENTFUNC  = Bytes.toBytes("EF");
+    public static byte[]  CQ_INSERIDX   = Bytes.toBytes("II");
+    public static byte[]  CQ_LDSDATA    = Bytes.toBytes("LD");
 
-    public static int  RDFNAME_INX   = 0;
-    
     public static int DEFAULT_NUM_OF_SALT = 100;
     public static String  DEFAULT_PADDING_STRING="%02d";
       
 
-    // rowkey triplet + first element from TS array
-    public static int  SN_INX        = 1;
-    public static int  OPTIME_INX    = 2;
-    public static int  ID_INX        = 3;
 
-    public static int  PARAMID_INX   = 4;
-    public static int  PARAMTYPE_INX = 5;
-    public static int  VALID_INX     = 6;
-    public static int  TS_INX        = 7;
-    public static int  VAL_INX       = 8;
-
+    public static int  RDFNAME_INX     = 0;
+    public static int  SN_INX          = 1;
+    public static int  OPTIME_INX      = 2;
+    public static int  EID_INX         = 3;
+    public static int  EVENTNAME_INX   = 4;
+    public static int  TS_INX          = 5;
+    public static int  DUR_INX         = 6;
+    public static int  EXCEEDANCE_INX  = 7;
+    public static int  PILOTINIT_INX   = 8;
+    public static int  HASLDS_INX      = 9;
+    public static int  EVENTTYPE_INX   = 10;
+    public static int  EVENTFUNC_INX   = 11;
+    public static int  INSERIDX_INX    = 12;
+    public static int  LDSDATA_INX     = 13;
 
     public static String TABLE_NAME = "custom.table.name";
     public static String COLUMN_FAMILY = "custom.column.family";
@@ -87,7 +93,7 @@ public class EventBulkLoad extends Configured implements Tool {
     public int run(String[] args) throws Exception {
 		
 	if (args.length == 0) {
-	    System.out.println("HBaseBulkLoad {inputPath} {outputPath} {tableName} {columnFamily} {numSalts}");
+	    System.out.println("EventBulkLoad {inputPath} {outputPath} {tableName} {columnFamily} {numSalts}");
 	    return 1;
 	}
 		
@@ -100,8 +106,8 @@ public class EventBulkLoad extends Configured implements Tool {
 	// Create job
 	Job job = Job.getInstance();
 
-	job.setJarByClass(HBaseBulkLoad.class);
-	job.setJobName("HBaseBulkLoad: " + numSalts);
+	job.setJarByClass(EventBulkLoad.class);
+	job.setJobName("EventBulkLoad: " + numSalts);
 		
 	job.getConfiguration().set(TABLE_NAME, tableName);
 	job.getConfiguration().set(COLUMN_FAMILY, columnFamily);
@@ -132,7 +138,7 @@ public class EventBulkLoad extends Configured implements Tool {
 
 	// Must all HBase to have write access to HFiles
 
-	System.out.println("About to chmod jprosser " );
+	System.out.println("About to chmod " );
 	
 	HFileUtils.changePermissionR(outputPath, hdfs);
 	System.out.println("DONE WITH chmod jprosser " );
@@ -171,126 +177,31 @@ public class EventBulkLoad extends Configured implements Tool {
 
 	    String[] columnDetail = value.toString().split("\t", -1);
 
-	    String rdfname   =columnDetail[RDFNAME_INX  ];
-	    String sn        =columnDetail[SN_INX       ];
-	    String optime    =columnDetail[OPTIME_INX   ];
-	    String id        =columnDetail[ID_INX       ];
-	    String paramid   =columnDetail[PARAMID_INX  ];
-	    String paramtype =columnDetail[PARAMTYPE_INX];
-	    String validZ64  =columnDetail[VALID_INX    ];
-	    String tsZ64     =columnDetail[TS_INX       ];
-	    String valZ64    =columnDetail[VAL_INX      ];
+	    String rdf        =columnDetail[RDFNAME_INX   ];
+	    String sn         =columnDetail[SN_INX        ];
+	    String optime     =columnDetail[OPTIME_INX    ];
+	    String eid        =columnDetail[EID_INX       ];
+	    String eventname  =columnDetail[EVENTNAME_INX ];
+	    String ts         =columnDetail[TS_INX        ];
+	    String dur        =columnDetail[DUR_INX       ];
+	    String exceedance =columnDetail[EXCEEDANCE_INX];
+	    String pilot      =columnDetail[PILOTINIT_INX ];
+	    String haslds     =columnDetail[HASLDS_INX    ];
+	    String eventtype  =columnDetail[EVENTTYPE_INX ];
+	    String eventfunc  =columnDetail[EVENTFUNC_INX ];
+	    String inseridx   =columnDetail[INSERIDX_INX  ];
+	    String ldsdata    =columnDetail[LDSDATA_INX   ];
 
 	    if("OPTIME".equals(optime)){
 		System.out.println("Skipping header " );
 		return;
 	    }
 	    
-	    byte[]  valid=null;
-	    byte[]  ts = null;
-	    byte[]  val = null;
-	    int[]   tsIntArray=null;
-	    int[]   valIntArray=null;
-	    float[] valFloatArray=null;
-	    char[]  validCharArray=null;
-
-	    int tsLength=0;
-
-		byte[]  validZ = Base64.decodeBase64(validZ64);
-		byte[]  tsZ    = Base64.decodeBase64(tsZ64);        
-		byte[]  valZ   = Base64.decodeBase64(valZ64);
-
-
-//		System.out.println("validZ64 length "+ Integer.toString(validZ64.length()) );
-//		System.out.println("validZ64 "+ validZ64 );
-//		System.out.println("validZ length " + Integer.toString(validZ.length) );
-
-
-		// Decompress the bytes  	    // TODO move this to its own private method
-		//		ByteArrayOutputStream validBos = new ByteArrayOutputStream();
-		ByteArrayOutputStream validBos=new ByteArrayOutputStream(validZ.length * 4 );
-		OutputStream validOut=new InflaterOutputStream(validBos);
-		validOut.write(validZ);
-		valid = validBos.toByteArray();
-		int validLength=valid.length;
-
-		ByteArrayOutputStream tsBos=new ByteArrayOutputStream(tsZ.length * 4 );
-		OutputStream tsOut=new InflaterOutputStream(tsBos);
-		tsOut.write(tsZ);
-		ts = tsBos.toByteArray();
-		tsLength=ts.length;
-
-		
-
-		ByteArrayOutputStream valBos=new ByteArrayOutputStream(valZ.length * 4 );
-		OutputStream valOut=new InflaterOutputStream(valBos);
-		valOut.write(valZ);
-		val = valBos.toByteArray();
-		int valLength=val.length;
-
-		int tsd = 0;
-		
-		if(tsLength > 0) {
-		    tsd  = ByteBuffer.wrap(ts,0,4).order(ByteOrder.LITTLE_ENDIAN).getInt(0);
-
-		    IntBuffer intBuf = ByteBuffer.wrap(ts).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer();
-
-		    tsIntArray = new int[intBuf.remaining()];
-		    intBuf.get(tsIntArray);
-
-		    System.out.println(" first ts was  " + Integer.toString(tsd) );
-		    //System.out.println(Arrays.toString(tsIntArray));
-		    
-		}else{
-		    System.out.println("tsLength was 0 " );
-		}
-
-		if(validLength > 0) {
-
-		    int valid1 = (int)  ByteBuffer.wrap(valid,0,1).order(ByteOrder.LITTLE_ENDIAN).get(0);
-		    System.out.println("first valid was " + Integer.toString(valid1) );
-
-		    CharBuffer charBuf = ByteBuffer.wrap(valid).order(ByteOrder.LITTLE_ENDIAN).asCharBuffer();
-
-		    validCharArray = new char[charBuf.remaining()];
-		    charBuf.get(validCharArray);
-
-		    System.out.println(Arrays.toString(validCharArray));
-		    
-		}else{
-		    System.out.println(" valid length was 0 " );
-		}
-
-		if(valLength > 0) {
-		    if( "1".equals(paramid)) {
-			FloatBuffer floatBuf = ByteBuffer.wrap(val).order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer();
-
-			valFloatArray = new float[floatBuf.remaining()];
-			floatBuf.get(valFloatArray);
-
-			System.out.println(Arrays.toString(valFloatArray));
-
-		    }else{
-
-			IntBuffer intBuf = ByteBuffer.wrap(val).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer();
-
-			valIntArray = new int[intBuf.remaining()];
-			intBuf.get(valIntArray);
-
-			System.out.println(Arrays.toString(valIntArray));
-
-		    }
-			
-		}else{
-		    System.out.println("val length was 0 " );
-		}
-
-
-		
-
 	    // TODO move this to its own private method
-	    Long convOptime = Long.MAX_VALUE - formatter.parseDateTime(optime).getMillis();
-	    String logicalKey =  sn + "|" + Long.toString(convOptime) + "|" + id+ "|" + Integer.toString(tsd);
+	    Long opTimeMillis=formatter.parseDateTime(optime).getMillis();
+	    Long convOptime = Long.MAX_VALUE - opTimeMillis;
+	    Long   tsd =  formatter.parseDateTime(optime).getMillis() - opTimeMillis;
+	    String logicalKey =  sn + "|" + Long.toString(convOptime) + "|" + eid+ "|" + Long.toString(tsd);
 	    String rowKey = StringUtils.leftPad(Integer.toString(Math.abs(sn.hashCode() % numSalts)), padLength, '0') + "|" + logicalKey ;
 		
 	    System.out.println("rowkey is " + rowKey);
@@ -298,29 +209,41 @@ public class EventBulkLoad extends Configured implements Tool {
 	    hKey.set(Bytes.toBytes(rowKey));
 
 	    //create new kvs and and add them
-	    kv = new KeyValue(hKey.get(), columnFamily, CQ_RDFNAME,  Bytes.toBytes(rdfname));
+	    kv = new KeyValue(hKey.get(), columnFamily, CQ_RDFNAME   ,Bytes.toBytes(rdf       ));
+	    context.write(hKey, kv);
+	    kv = new KeyValue(hKey.get(), columnFamily, CQ_SN        ,Bytes.toBytes(sn        ));
+	    context.write(hKey, kv);
+	    kv = new KeyValue(hKey.get(), columnFamily, CQ_OPTIME    ,Bytes.toBytes(optime    ));
+	    context.write(hKey, kv);
+	    kv = new KeyValue(hKey.get(), columnFamily, CQ_EID       ,Bytes.toBytes(eid       ));
+	    context.write(hKey, kv);
+	    kv = new KeyValue(hKey.get(), columnFamily, CQ_EVENTNAME ,Bytes.toBytes(eventname ));
+	    context.write(hKey, kv);
+	    kv = new KeyValue(hKey.get(), columnFamily, CQ_TS        ,Bytes.toBytes(ts        ));
+	    context.write(hKey, kv);
+	    kv = new KeyValue(hKey.get(), columnFamily, CQ_DUR       ,Bytes.toBytes(dur       ));
+	    context.write(hKey, kv);
+	    kv = new KeyValue(hKey.get(), columnFamily, CQ_EXCEEDANCE,Bytes.toBytes(exceedance));
+	    context.write(hKey, kv);
+	    kv = new KeyValue(hKey.get(), columnFamily, CQ_PILOTINIT     ,Bytes.toBytes(pilot     ));
+	    context.write(hKey, kv);
+	    kv = new KeyValue(hKey.get(), columnFamily, CQ_HASLDS    ,Bytes.toBytes(haslds    ));
+	    context.write(hKey, kv);
+	    kv = new KeyValue(hKey.get(), columnFamily, CQ_EVENTTYPE ,Bytes.toBytes(eventtype ));
+	    context.write(hKey, kv);
+	    kv = new KeyValue(hKey.get(), columnFamily, CQ_EVENTFUNC ,Bytes.toBytes(eventfunc ));
+	    context.write(hKey, kv);
+	    kv = new KeyValue(hKey.get(), columnFamily, CQ_INSERIDX  ,Bytes.toBytes(inseridx  ));
+	    context.write(hKey, kv);
+	    kv = new KeyValue(hKey.get(), columnFamily, CQ_LDSDATA   ,Bytes.toBytes(ldsdata   ));
 	    context.write(hKey, kv);
 
-	    kv = new KeyValue(hKey.get(), columnFamily, CQ_PARAMID,  Bytes.toBytes(paramid));
-	    context.write(hKey, kv);
-
-	    kv = new KeyValue(hKey.get(), columnFamily, CQ_PARAMTYPE,  Bytes.toBytes(paramtype));
-	    context.write(hKey, kv);
-
-	    kv = new KeyValue(hKey.get(), columnFamily, CQ_VALID,  valid);
-	    context.write(hKey, kv);
-
-	    kv = new KeyValue(hKey.get(), columnFamily, CQ_TS,  tsIntArray   );
-	    context.write(hKey, kv);
-
-	    kv = new KeyValue(hKey.get(), columnFamily, CQ_VAL,  val  );
-	    context.write(hKey, kv);
 	}
     }
 
 
     public static void main(String[] argv) throws Exception {
-	int ret = ToolRunner.run(new HBaseBulkLoad(), argv);
+	int ret = ToolRunner.run(new EventBulkLoad(), argv);
 	System.exit(ret);
     }
 

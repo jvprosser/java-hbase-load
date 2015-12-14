@@ -87,7 +87,7 @@ public class ParamBulkLoad extends Configured implements Tool {
     public int run(String[] args) throws Exception {
 		
 	if (args.length == 0) {
-	    System.out.println("HBaseBulkLoad {inputPath} {outputPath} {tableName} {columnFamily} {numSalts}");
+	    System.out.println("ParamBulkLoad {inputPath} {outputPath} {tableName} {columnFamily} {numSalts}");
 	    return 1;
 	}
 		
@@ -100,8 +100,8 @@ public class ParamBulkLoad extends Configured implements Tool {
 	// Create job
 	Job job = Job.getInstance();
 
-	job.setJarByClass(HBaseBulkLoad.class);
-	job.setJobName("HBaseBulkLoad: " + numSalts);
+	job.setJarByClass(ParamBulkLoad.class);
+	job.setJobName("ParamBulkLoad: " + numSalts);
 		
 	job.getConfiguration().set(TABLE_NAME, tableName);
 	job.getConfiguration().set(COLUMN_FAMILY, columnFamily);
@@ -220,7 +220,6 @@ public class ParamBulkLoad extends Configured implements Tool {
 		ts = tsBos.toByteArray();
 		tsLength=ts.length;
 
-		
 
 		ByteArrayOutputStream valBos=new ByteArrayOutputStream(valZ.length * 4 );
 		OutputStream valOut=new InflaterOutputStream(valBos);
@@ -269,7 +268,6 @@ public class ParamBulkLoad extends Configured implements Tool {
 			floatBuf.get(valFloatArray);
 
 			System.out.println(Arrays.toString(valFloatArray));
-
 		    }else{
 
 			IntBuffer intBuf = ByteBuffer.wrap(val).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer();
@@ -278,15 +276,12 @@ public class ParamBulkLoad extends Configured implements Tool {
 			intBuf.get(valIntArray);
 
 			System.out.println(Arrays.toString(valIntArray));
-
 		    }
 			
 		}else{
 		    System.out.println("val length was 0 " );
 		}
 
-
-		
 
 	    // TODO move this to its own private method
 	    Long convOptime = Long.MAX_VALUE - formatter.parseDateTime(optime).getMillis();
@@ -320,7 +315,7 @@ public class ParamBulkLoad extends Configured implements Tool {
 
 
     public static void main(String[] argv) throws Exception {
-	int ret = ToolRunner.run(new HBaseBulkLoad(), argv);
+	int ret = ToolRunner.run(new ParamBulkLoad(), argv);
 	System.exit(ret);
     }
 
