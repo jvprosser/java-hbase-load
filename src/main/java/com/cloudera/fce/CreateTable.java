@@ -47,7 +47,7 @@ public class CreateTable  extends Configured implements Tool {
 	String regionCount = args[2];
 	String saltsPerRegion = args[3];
 		
-#	long regionMaxSize = 107374182400l;
+	//	long regionMaxSize = 107374182400l;
 	long regionMaxSize = 15032385536l;
 		
 	if (args.length > 4) {
@@ -97,9 +97,10 @@ public class CreateTable  extends Configured implements Tool {
 	    int counter = 0;
 			
 	    for( counter = 0; counter < numRegions; counter++) {
-		String key = StringUtils.leftPad(Integer.toString(counter * numSaltsPerRegion), padLength, '0');
+		//		String key = StringUtils.leftPad(Integer.toString(counter * numSaltsPerRegion), padLength, '0');
+		short key = (short)(counter * numSaltsPerRegion);
 		splitKeys[counter] = Bytes.toBytes(key); 
-		System.out.println(key +" adding key for " + splitKeys[counter].toString() );
+		System.out.println(String.valueOf(key) +" adding key for " + splitKeys[counter].toString() );
 	    }
 
 	    admin.createTable(tableDescriptor, splitKeys);
