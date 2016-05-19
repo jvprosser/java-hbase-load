@@ -89,11 +89,12 @@ public class EventBulkLoad extends Configured implements Tool {
     public static String TABLE_NAME = "custom.table.name";
     public static String COLUMN_FAMILY = "custom.column.family";
     public static String NUM_SALTS = "custom.numSalts";
+    public static String FLEET_ID = "custom.fleetId";
 	
     public int run(String[] args) throws Exception {
 		
 	if (args.length == 0) {
-	    System.out.println("EventBulkLoad {inputPath} {outputPath} {tableName} {columnFamily} {numSalts}");
+	    System.out.println("EventBulkLoad {inputPath} {outputPath} {tableName} {columnFamily} {fleet id} {numSalts}");
 	    return 1;
 	}
 		
@@ -101,7 +102,8 @@ public class EventBulkLoad extends Configured implements Tool {
 	String outputPath = args[1];
 	String tableName = args[2];
 	String columnFamily = args[3];
-	String numSalts = args[4];
+	String fleetId = args[4];
+	String numSalts = args[5];
 
 	// Create job
 	Job job = Job.getInstance();
@@ -112,6 +114,7 @@ public class EventBulkLoad extends Configured implements Tool {
 	job.getConfiguration().set(TABLE_NAME, tableName);
 	job.getConfiguration().set(COLUMN_FAMILY, columnFamily);
 	job.getConfiguration().set(NUM_SALTS, numSalts);
+	job.getConfiguration().set(FLEET_ID, fleetId);
 		
 	// Define input format and path
 	job.setInputFormatClass(TextInputFormat.class);
@@ -158,15 +161,15 @@ public class EventBulkLoad extends Configured implements Tool {
 	int numSalts;
 	int padLength=3;
 	DateTimeFormatter formatter = null;
-
+	String fleetId = null;
 	@Override
 	    public void setup(Context context) {
 	    columnFamily = Bytes.toBytes(context.getConfiguration().get(COLUMN_FAMILY));
 	    numSalts =  Integer.parseInt(context.getConfiguration().get(NUM_SALTS));
 	    taskId = context.getTaskAttemptID().getTaskID().getId();
-
-	    padLength = Integer.toString(numSalts-1).length();
-	    formatter  = ISODateTimeFormat.dateTime().withZone(DateTimeZone.getDefault());
+	    fleetId =   context.getConfiguration().get(FLEET_ID);
+	    //padLength = Integer.toString(numSalts-1).length();
+	    formatter  = ISODateTimeFormat.dateTime().withZone(DateTimeZone.UTC);
 	}
 
 	long counter = 0;
@@ -200,13 +203,23 @@ public class EventBulkLoad extends Configured implements Tool {
 	    // TODO move this to its own private method
 	    Long opTimeMillis=formatter.parseDateTime(optime).getMillis();
 	    Long convOptime = Long.MAX_VALUE - opTimeMillis;
-	    Long   tsd =  formatter.parseDateTime(optime).getMillis() - opTimeMillis;
-	    String logicalKey =  sn + "|" + Long.toString(convOptime) + "|" + eid+ "|" + Long.toString(tsd);
-	    String rowKey = StringUtils.leftPad(Integer.toString(Math.abs(sn.hashCode() % numSalts)), padLength, '0') + "|" + logicalKey ;
-		
-	    System.out.println("rowkey is " + rowKey);
 
-	    hKey.set(Bytes.toBytes(rowKey));
+	    String hashInput= fleetId + sn;
+	    short hashVal = (short)Math.abs(hashInput.hashCode() % numSalts);
+	    byte[] hashValBytes = ByteBuffer.allocate(2).putShort(hashVal).array();
+
+	    Long   tsd =  formatter.parseDateTime(ts).getMillis() - opTimeMillis;
+	    String logicalKey =  fleetId + "|" + sn + "|" + Long.toString(convOptime) + "|" + eid+ "|" + Long.toString(tsd);
+	    String rowKey = StringUtils.leftPad(Integer.toString(Math.abs(sn.hashCode() % numSalts)), padLength, '0') + "|" + logicalKey ;
+
+	    byte[] logicalKeyBytes = Bytes.toBytes(logicalKey);
+	    
+	    byte[] rowKeyBytes = new byte[hashValBytes.length + logicalKeyBytes.length];
+
+	    System.arraycopy(hashValBytes, 0, rowKeyBytes, 0, hashValBytes.length);
+	    System.arraycopy(logicalKeyBytes, 0, rowKeyBytes, hashValBytes.length, logicalKeyBytes.length);
+
+	    hKey.set(rowKeyBytes);
 
 	    //create new kvs and and add them
 	    kv = new KeyValue(hKey.get(), columnFamily, CQ_RDFNAME   ,Bytes.toBytes(rdf       ));
